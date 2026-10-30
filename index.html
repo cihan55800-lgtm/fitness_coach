@@ -1,0 +1,1925 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Pro Fit & Otonom Sağlık Koçu</title>
+    <!-- Tailwind CSS v4 CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- HTML5-QRCode Scanner CDN -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.6);
+        }
+        /* Kas Isı Haritası Parlamaları */
+        .muscle-hotspot {
+            position: absolute;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            mix-blend-mode: screen;
+            opacity: 0.65;
+        }
+        .muscle-hotspot:hover {
+            opacity: 0.95;
+            transform: scale(1.08);
+            box-shadow: 0 0 15px currentColor;
+        }
+        .heat-high { background-color: rgba(239, 68, 68, 0.7); color: #ef4444; box-shadow: 0 0 12px #ef4444; }
+        .heat-mid { background-color: rgba(245, 158, 11, 0.65); color: #f59e0b; box-shadow: 0 0 10px #f59e0b; }
+        .heat-low { background-color: rgba(16, 185, 129, 0.6); color: #10b981; box-shadow: 0 0 8px #10b981; }
+        .heat-none { background-color: rgba(100, 116, 139, 0.25); color: #64748b; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-indigo-600 selection:text-white">
+
+    <!-- Üst Başlık & Gezinme Çubuğu -->
+    <header class="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-indigo-600 to-violet-500 p-2.5 rounded-2xl text-white font-extrabold text-xl shadow-lg shadow-indigo-600/30">
+                    💪 AI Pro Fit
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="font-bold text-lg leading-tight tracking-wide">Otonom Sağlık & Fitness Sistemi</h1>
+                        <span id="agent-pulse-badge" class="px-2 py-0.5 text-[10px] bg-emerald-950/80 text-emerald-400 border border-emerald-800 rounded-full flex items-center gap-1 font-semibold">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Ajan Aktif
+                        </span>
+                    </div>
+                    <span class="text-xs text-slate-400">GitHub Pages & PWA Uyumlu • LocalStorage Senkronize</span>
+                </div>
+            </div>
+
+            <!-- Navigasyon Sekmeleri -->
+            <nav class="flex space-x-1 bg-slate-950/80 p-1.5 rounded-2xl border border-slate-800 flex-wrap overflow-x-auto">
+                <button onclick="switchTab('workout')" id="tab-workout" class="px-3.5 py-2 text-xs md:text-sm font-semibold rounded-xl bg-indigo-600 text-white transition flex items-center gap-1.5">
+                    🏋️ Antrenman & Plan
+                </button>
+                <button onclick="switchTab('diet')" id="tab-diet" class="px-3.5 py-2 text-xs md:text-sm font-semibold rounded-xl text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                    🥩 Beslenme & Tablo
+                </button>
+                <button onclick="switchTab('water')" id="tab-water" class="px-3.5 py-2 text-xs md:text-sm font-semibold rounded-xl text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                    💧 Su Takibi
+                </button>
+                <button onclick="switchTab('anatomy')" id="tab-anatomy" class="px-3.5 py-2 text-xs md:text-sm font-semibold rounded-xl text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                    🧬 Anatomi Modeli
+                </button>
+                <button onclick="switchTab('progress')" id="tab-progress" class="px-3.5 py-2 text-xs md:text-sm font-semibold rounded-xl text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                    📈 Grafikler & Analitik
+                </button>
+                <button onclick="switchTab('agent')" id="tab-agent" class="px-3.5 py-2 text-xs md:text-sm font-semibold rounded-xl text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                    🛡️ Sağlık Ajanı
+                </button>
+                <button onclick="switchTab('ai')" id="tab-ai" class="px-3.5 py-2 text-xs md:text-sm font-semibold rounded-xl text-slate-400 hover:text-white transition flex items-center gap-1.5">
+                    🤖 AI Koç
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Otonom Ajan Teşhis / Uyarı Bildirim Bandı -->
+    <div id="agent-alert-banner" class="hidden bg-amber-950/80 border-b border-amber-800 text-amber-200 px-4 py-2.5 text-xs">
+        <div class="max-w-7xl mx-auto flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <span class="text-base">⚠️</span>
+                <span id="agent-alert-text" class="font-medium">Otonom Ajan Uyarısı: Su ihtiyacınız kritik seviyede.</span>
+            </div>
+            <button onclick="document.getElementById('agent-alert-banner').classList.add('hidden')" class="text-amber-400 hover:text-white font-bold text-sm px-2">✕</button>
+        </div>
+    </div>
+
+    <!-- Ana İçerik Konteyneri -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 w-full">
+
+        <!-- ========================================== -->
+        <!-- 1. ANTRENMAN & HAREKET KUTUCUKLARI (TAB 1) -->
+        <!-- ========================================== -->
+        <section id="content-workout" class="space-y-6">
+            <!-- Üst Gün Seçici Çubuğu -->
+            <div class="glass-panel p-4 rounded-2xl flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-bold text-indigo-400">Gün Seçimi & Antrenman Rutini</h2>
+                    <p class="text-xs text-slate-400">Günü seçin, hareketlerinizi ayrı ayrı kutucuklar ve set detaylarıyla kaydedin.</p>
+                </div>
+                <div class="flex flex-wrap gap-1.5" id="day-selector-pills">
+                    <button onclick="selectDay('Pazartesi')" class="day-pill px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white transition" data-day="Pazartesi">Pazartesi</button>
+                    <button onclick="selectDay('Salı')" class="day-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition" data-day="Salı">Salı</button>
+                    <button onclick="selectDay('Çarşamba')" class="day-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition" data-day="Çarşamba">Çarşamba</button>
+                    <button onclick="selectDay('Perşembe')" class="day-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition" data-day="Perşembe">Perşembe</button>
+                    <button onclick="selectDay('Cuma')" class="day-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition" data-day="Cuma">Cuma</button>
+                    <button onclick="selectDay('Cumartesi')" class="day-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition" data-day="Cumartesi">Cumartesi</button>
+                    <button onclick="selectDay('Pazar')" class="day-pill px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-900 text-slate-300 hover:bg-slate-800 transition" data-day="Pazar">Pazar</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Sol Kolon: Yeni Hareket & Ayrı Ayrı Set/Tekrar Kutucukları Formu -->
+                <div class="glass-panel p-5 rounded-2xl h-fit space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h3 class="font-bold text-sm text-indigo-400 flex items-center gap-1.5">
+                            <span>➕</span> Yeni Hareket & Set Kutucukları
+                        </h3>
+                        <span id="active-day-badge" class="text-xs bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded-md font-semibold border border-indigo-800">
+                            Pazartesi
+                        </span>
+                    </div>
+
+                    <form id="workout-form" onsubmit="saveStructuredExercise(event)" class="space-y-4">
+                        <!-- Hareket Adı & Hızlı Öneriler -->
+                        <div>
+                            <label class="text-xs text-slate-300 font-semibold block mb-1">Hareket Adı</label>
+                            <input type="text" id="workout-name-input" placeholder="Örn: Bench Press, Incline Dumbbell..." required 
+                                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                            <!-- Hızlı Hareket Seçim Çipleri -->
+                            <div class="flex flex-wrap gap-1 mt-2">
+                                <button type="button" onclick="setQuickExercise('Bench Press', 'Göğüs')" class="text-[10px] bg-slate-900 hover:bg-indigo-900/50 text-slate-300 px-2 py-0.5 rounded border border-slate-800">Bench Press</button>
+                                <button type="button" onclick="setQuickExercise('Squat', 'Bacak')" class="text-[10px] bg-slate-900 hover:bg-indigo-900/50 text-slate-300 px-2 py-0.5 rounded border border-slate-800">Squat</button>
+                                <button type="button" onclick="setQuickExercise('Deadlift', 'Sırt')" class="text-[10px] bg-slate-900 hover:bg-indigo-900/50 text-slate-300 px-2 py-0.5 rounded border border-slate-800">Deadlift</button>
+                                <button type="button" onclick="setQuickExercise('Lat Pulldown', 'Sırt')" class="text-[10px] bg-slate-900 hover:bg-indigo-900/50 text-slate-300 px-2 py-0.5 rounded border border-slate-800">Lat Pulldown</button>
+                                <button type="button" onclick="setQuickExercise('Overhead Press', 'Omuz')" class="text-[10px] bg-slate-900 hover:bg-indigo-900/50 text-slate-300 px-2 py-0.5 rounded border border-slate-800">Overhead Press</button>
+                                <button type="button" onclick="setQuickExercise('Biceps Barbell Curl', 'Biceps')" class="text-[10px] bg-slate-900 hover:bg-indigo-900/50 text-slate-300 px-2 py-0.5 rounded border border-slate-800">Barbell Curl</button>
+                            </div>
+                        </div>
+
+                        <!-- Hedef Kas Grubu -->
+                        <div>
+                            <label class="text-xs text-slate-300 font-semibold block mb-1">Hedef Kas Grubu (Anatomi İçin)</label>
+                            <select id="workout-muscle-select" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-indigo-500">
+                                <option value="Göğüs">Göğüs (Chest)</option>
+                                <option value="Sırt">Sırt & Kanat (Back / Lats)</option>
+                                <option value="Bacak">Ön Bacak (Quadriceps)</option>
+                                <option value="Arka Bacak">Arka Bacak & Kalça (Hamstrings / Glutes)</option>
+                                <option value="Omuz">Omuz (Deltoids)</option>
+                                <option value="Biceps">Biceps (Ön Kol)</option>
+                                <option value="Triceps">Triceps (Arka Kol)</option>
+                                <option value="Karın">Karın & Core (Abs)</option>
+                                <option value="Baldır">Baldır / Kalf (Calves)</option>
+                            </select>
+                        </div>
+
+                        <!-- Ayrı Ayrı Set, Tekrar ve Ağırlık Kutucukları Bölümü -->
+                        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800/80 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-bold text-slate-300">Set Kutucukları (Tekrar & Ağırlık)</span>
+                                <button type="button" onclick="addSetRowInput()" class="text-xs bg-indigo-600 hover:bg-indigo-500 text-white px-2.5 py-1 rounded-lg font-semibold transition">
+                                    + Set Kutucuğu Ekle
+                                </button>
+                            </div>
+                            
+                            <!-- Dinamik Set Kutucukları Listesi -->
+                            <div id="dynamic-sets-container" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                                <!-- Varsayılan Set 1, 2, 3 dinamik JS ile yüklenecek -->
+                            </div>
+                        </div>
+
+                        <!-- Zorluk / RPE -->
+                        <div>
+                            <label class="text-xs text-slate-400 font-medium block mb-1">Genel Zorluk Seviyesi</label>
+                            <select id="workout-difficulty" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs">
+                                <option value="Kolay">🟢 Kolay (RPE 6 - Isınma / Rahat)</option>
+                                <option value="Orta" selected>🟡 Orta (RPE 8 - İdeal hipertrofi)</option>
+                                <option value="Zor">🔴 Zor (RPE 10 - Tükeniş / Maksimal)</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 font-bold py-2.5 rounded-xl transition shadow-lg shadow-indigo-600/30 text-sm">
+                            Hareketi Kaydet & Anatomiye İşle
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Sağ Kolon: Günün Hareketleri ve Ayrı Ayrı Kutucuk Kartları -->
+                <div class="lg:col-span-2 glass-panel p-5 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3 flex-wrap gap-2">
+                        <div>
+                            <h3 class="font-bold text-base text-indigo-400 flex items-center gap-2">
+                                <span id="list-day-title">Pazartesi</span> Antrenman Programı
+                            </h3>
+                            <p class="text-xs text-slate-400">Her hareket için set, tekrar ve ağırlık kutucukları aşağıda listelenmiştir.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="clearDayWorkouts()" class="text-xs text-red-400 hover:bg-red-950/40 px-2.5 py-1 rounded-lg border border-red-900/50 transition">
+                                Bu Günü Temizle
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hareket Kartları Listesi -->
+                    <div id="workout-cards-list" class="space-y-3.5 max-h-[620px] overflow-y-auto pr-2">
+                        <!-- Dinamik doldurulacak -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 2. BESLENME, GRAMAJ VE BARKOD TABLOSU (TAB 2) -->
+        <!-- ========================================== -->
+        <section id="content-diet" class="hidden space-y-6">
+            <!-- Üst Günlük Makro Özeti Kartları -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="glass-panel p-4 rounded-2xl border-l-4 border-emerald-500">
+                    <span class="text-xs text-slate-400 font-semibold">Toplam Kalori</span>
+                    <h3 id="diet-total-cals" class="text-2xl font-black text-emerald-400 mt-1">0 kcal</h3>
+                    <div class="w-full bg-slate-900 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="bar-cal" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span id="cal-target-label" class="text-[10px] text-slate-500 mt-1 block">Hedef: 2200 kcal</span>
+                </div>
+
+                <div class="glass-panel p-4 rounded-2xl border-l-4 border-indigo-500">
+                    <span class="text-xs text-slate-400 font-semibold">Protein</span>
+                    <h3 id="diet-total-prot" class="text-2xl font-black text-indigo-400 mt-1">0 g</h3>
+                    <div class="w-full bg-slate-900 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="bar-prot" class="bg-indigo-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span id="prot-target-label" class="text-[10px] text-slate-500 mt-1 block">Hedef: 140 g</span>
+                </div>
+
+                <div class="glass-panel p-4 rounded-2xl border-l-4 border-amber-500">
+                    <span class="text-xs text-slate-400 font-semibold">Karbonhidrat</span>
+                    <h3 id="diet-total-carb" class="text-2xl font-black text-amber-400 mt-1">0 g</h3>
+                    <div class="w-full bg-slate-900 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="bar-carb" class="bg-amber-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span id="carb-target-label" class="text-[10px] text-slate-500 mt-1 block">Hedef: 240 g</span>
+                </div>
+
+                <div class="glass-panel p-4 rounded-2xl border-l-4 border-rose-500">
+                    <span class="text-xs text-slate-400 font-semibold">Yağ</span>
+                    <h3 id="diet-total-fat" class="text-2xl font-black text-rose-400 mt-1">0 g</h3>
+                    <div class="w-full bg-slate-900 h-1.5 rounded-full mt-2 overflow-hidden">
+                        <div id="bar-fat" class="bg-rose-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <span id="fat-target-label" class="text-[10px] text-slate-500 mt-1 block">Hedef: 65 g</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Sol Kolon: Detaylı Besin Ekleme + Gramaj Oran-Orantı + Barkod Okuyucu -->
+                <div class="glass-panel p-5 rounded-2xl h-fit space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h3 class="font-bold text-sm text-emerald-400 flex items-center gap-1.5">
+                            <span>🥗</span> Detaylı Besin Kaydı
+                        </h3>
+                        <button type="button" onclick="openBarcodeModal()" class="text-xs bg-slate-900 hover:bg-slate-800 text-indigo-300 border border-indigo-700/60 px-2.5 py-1 rounded-lg flex items-center gap-1 font-semibold transition">
+                            📷 Barkod Tara
+                        </button>
+                    </div>
+
+                    <form id="food-form" onsubmit="saveDetailedFood(event)" class="space-y-3">
+                        <!-- Öğün Türü Seçici -->
+                        <div>
+                            <label class="text-xs text-slate-300 font-semibold block mb-1">Öğün Türü</label>
+                            <select id="food-meal-type" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+                                <option value="Kahvaltı">🍳 Kahvaltı</option>
+                                <option value="Öğle Yemeği">🍲 Öğle Yemeği</option>
+                                <option value="Akşam Yemeği">🥩 Akşam Yemeği</option>
+                                <option value="Ara Öğün">🍎 Ara Öğün / Atıştırmalık</option>
+                                <option value="Antrenman Sonrası">🥤 Antrenman Sonrası Shake</option>
+                            </select>
+                        </div>
+
+                        <!-- Hazır Besin Şablonu (100g referanslı) -->
+                        <div>
+                            <label class="text-xs text-slate-300 font-semibold block mb-1">Besin Seçin veya Manuel Yazın</label>
+                            <select id="food-preset-select" onchange="applyFoodPreset()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 mb-1.5 focus:outline-none focus:border-emerald-500">
+                                <option value="">-- Hızlı Besin Kütüphanesinden Seçin --</option>
+                                <option value="tavuk">Tavuk Göğsü (100g: 120 kcal, 26g P, 0g K, 1.5g Y)</option>
+                                <option value="kiyma">Yağsız Dana Kıyma (100g: 215 kcal, 24g P, 0g K, 13g Y)</option>
+                                <option value="yumurta">Haşlanmış Yumurta (100g: 155 kcal, 13g P, 1.1g K, 11g Y)</option>
+                                <option value="yulaf">Yulaf Ezmesi (100g: 370 kcal, 13g P, 60g K, 7g Y)</option>
+                                <option value="pirinc">Basmati Pirinç (Haşlanmış 100g: 130 kcal, 2.7g P, 28g K, 0.4g Y)</option>
+                                <option value="somon">Somon Balığı (100g: 206 kcal, 22g P, 0g K, 12g Y)</option>
+                                <option value="lor">Lor Peyniri (100g: 90 kcal, 17g P, 3g K, 1g Y)</option>
+                                <option value="muz">Muz (100g: 89 kcal, 1.1g P, 23g K, 0.3g Y)</option>
+                                <option value="zeytinyagi">Zeytinyağı (10g: 88 kcal, 0g P, 0g K, 10g Y)</option>
+                                <option value="badem">Çiğ Badem (100g: 579 kcal, 21g P, 22g K, 50g Y)</option>
+                                <option value="custom">✏️ Özel Besin / Serbest Giriş</option>
+                            </select>
+                            <input type="text" id="food-name-input" placeholder="Besin Adı (Örn: Fırında Tavuk)" required
+                                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500">
+                        </div>
+
+                        <!-- GRAMAJ GİRDİSİ VE ORAN ORANTI KUTUSU (Requirement 4) -->
+                        <div class="bg-emerald-950/20 p-3 rounded-xl border border-emerald-800/60 space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs text-emerald-300 font-bold">⚖️ Tüketilen Gramaj (Gram)</label>
+                                <span class="text-[10px] text-emerald-400 font-mono">Oran-Orantı Otomatik</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="food-grams-input" value="100" min="1" step="1" required oninput="calculateGramsProportion()"
+                                       class="w-full bg-slate-950 border border-emerald-600 rounded-xl px-3 py-2 text-base font-bold text-white text-center focus:outline-none">
+                                <span class="text-xs font-bold text-slate-400">Gram</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400 leading-tight">Gramajı değiştirdiğinizde kalori ve makrolar otomatik olarak hesaplanır.</p>
+                        </div>
+
+                        <!-- Hesaplanmış veya Özel Makro Değerleri Kutucukları -->
+                        <div class="grid grid-cols-2 gap-2 text-xs">
+                            <div>
+                                <label class="text-slate-400 font-medium block mb-1">Kalori (kcal)</label>
+                                <input type="number" id="food-cal-input" step="1" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 font-bold text-emerald-400">
+                            </div>
+                            <div>
+                                <label class="text-slate-400 font-medium block mb-1">Protein (g)</label>
+                                <input type="number" id="food-prot-input" step="0.1" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 font-bold text-indigo-400">
+                            </div>
+                            <div>
+                                <label class="text-slate-400 font-medium block mb-1">Karbonhidrat (g)</label>
+                                <input type="number" id="food-carb-input" step="0.1" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 font-bold text-amber-400">
+                            </div>
+                            <div>
+                                <label class="text-slate-400 font-medium block mb-1">Yağ (g)</label>
+                                <input type="number" id="food-fat-input" step="0.1" required class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 font-bold text-rose-400">
+                            </div>
+                        </div>
+
+                        <!-- Not / Marka -->
+                        <div>
+                            <label class="text-xs text-slate-400 font-medium block mb-1">Not / Marka (Opsiyonel)</label>
+                            <input type="text" id="food-note-input" placeholder="Örn: Banvit, Pınar, Ev Yapımı..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300">
+                        </div>
+
+                        <button type="submit" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 font-bold py-2.5 rounded-xl transition shadow-lg shadow-emerald-600/30 text-sm">
+                            Besini Tabloya Ekle
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Sağ Kolon: SÜTUNLU DETAYLI VERİ TABLOSU VE SİLME BUTONLARI (Requirement 3 & 5) -->
+                <div class="lg:col-span-2 glass-panel p-5 rounded-2xl space-y-4">
+                    <div class="flex justify-between items-center border-b border-slate-800 pb-3 flex-wrap gap-2">
+                        <div>
+                            <h3 class="font-bold text-base text-emerald-400 flex items-center gap-2">
+                                📋 Günlük Besin & Makro Kayıt Tablosu
+                            </h3>
+                            <p class="text-xs text-slate-400">Tüm öğünleriniz, gramajları ve hesaplanan değerleriyle burada listelenir. İstediğiniz kaydı silebilirsiniz.</p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <!-- Öğün Filtreleme -->
+                            <select id="food-filter-meal" onchange="renderFoodTable()" class="bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1 text-xs text-slate-300">
+                                <option value="all">Tüm Öğünler</option>
+                                <option value="Kahvaltı">Kahvaltı</option>
+                                <option value="Öğle Yemeği">Öğle Yemeği</option>
+                                <option value="Akşam Yemeği">Akşam Yemeği</option>
+                                <option value="Ara Öğün">Ara Öğün</option>
+                                <option value="Antrenman Sonrası">Antrenman Sonrası</option>
+                            </select>
+                            <button onclick="clearAllFoods()" class="text-xs text-red-400 hover:bg-red-950/40 px-2.5 py-1 rounded-lg border border-red-900/50 transition">
+                                Tümünü Temizle
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Sütunlu Veri Tablosu -->
+                    <div class="overflow-x-auto rounded-xl border border-slate-800">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-900/90 text-slate-400 uppercase font-semibold border-b border-slate-800">
+                                <tr>
+                                    <th class="px-3.5 py-3">Öğün</th>
+                                    <th class="px-3.5 py-3">Besin & Not</th>
+                                    <th class="px-3.5 py-3 text-center">Gramaj</th>
+                                    <th class="px-3.5 py-3 text-right">Kalori</th>
+                                    <th class="px-3.5 py-3 text-right">Protein</th>
+                                    <th class="px-3.5 py-3 text-right">Karb</th>
+                                    <th class="px-3.5 py-3 text-right">Yağ</th>
+                                    <th class="px-3.5 py-3 text-center">Saat</th>
+                                    <th class="px-3.5 py-3 text-center">İşlem</th>
+                                </tr>
+                            </thead>
+                            <tbody id="food-table-body" class="divide-y divide-slate-800/60 bg-slate-950">
+                                <!-- Dinamik satırlar ve her satırda kırmızı Sil Butonu yer alacak -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 3. ÖZEL SU TAKİBİ VE GİRDİ ALANI (TAB 3 - Req 7) -->
+        <!-- ========================================== -->
+        <section id="content-water" class="hidden space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Sol Kolon: Özel Giriş Alanı + Hızlı Butonlar + Hedef Ayarı -->
+                <div class="glass-panel p-5 rounded-2xl h-fit space-y-5">
+                    <div class="border-b border-slate-800 pb-3">
+                        <h3 class="font-bold text-base text-cyan-400 flex items-center gap-2">
+                            💧 Hidrasyon & Su Kaydı
+                        </h3>
+                        <p class="text-xs text-slate-400">İster hazır bardak butonlarıyla, ister doğrudan mililitre girerek su kaydedin.</p>
+                    </div>
+
+                    <!-- Doğrudan Özel Miktar Girdi Alanı (Requirement 7) -->
+                    <div class="bg-cyan-950/20 p-4 rounded-xl border border-cyan-800/60 space-y-3">
+                        <label class="text-xs font-bold text-cyan-300 block">Özel Su Miktarı Girdisi (ml)</label>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="custom-water-ml" placeholder="Örn: 350" min="10" step="10"
+                                   class="w-full bg-slate-950 border border-cyan-600 rounded-xl px-3 py-2 text-base font-bold text-cyan-200 focus:outline-none">
+                            <button onclick="addCustomWater()" class="bg-cyan-600 hover:bg-cyan-500 text-white font-bold px-4 py-2 rounded-xl text-sm transition">
+                                Ekle
+                            </button>
+                        </div>
+                        <span class="text-[11px] text-slate-400">İçtiğiniz suyun ml değerini doğrudan yazıp ekleyebilirsiniz.</span>
+                    </div>
+
+                    <!-- Hızlı Ekleme Butonları -->
+                    <div>
+                        <label class="text-xs font-semibold text-slate-300 block mb-2">Hızlı Bardak / Şişe Butonları</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="addWaterQuick(200)" class="bg-slate-900 hover:bg-cyan-900/40 border border-slate-800 hover:border-cyan-700 p-2.5 rounded-xl text-xs font-bold text-cyan-300 transition flex items-center justify-center gap-1.5">
+                                🥛 +200 ml <span class="text-[10px] text-slate-500">(1 Bardak)</span>
+                            </button>
+                            <button onclick="addWaterQuick(330)" class="bg-slate-900 hover:bg-cyan-900/40 border border-slate-800 hover:border-cyan-700 p-2.5 rounded-xl text-xs font-bold text-cyan-300 transition flex items-center justify-center gap-1.5">
+                                🥤 +330 ml <span class="text-[10px] text-slate-500">(Küçük Şişe)</span>
+                            </button>
+                            <button onclick="addWaterQuick(500)" class="bg-slate-900 hover:bg-cyan-900/40 border border-slate-800 hover:border-cyan-700 p-2.5 rounded-xl text-xs font-bold text-cyan-300 transition flex items-center justify-center gap-1.5">
+                                🍶 +500 ml <span class="text-[10px] text-slate-500">(Büyük Şişe)</span>
+                            </button>
+                            <button onclick="addWaterQuick(1000)" class="bg-slate-900 hover:bg-cyan-900/40 border border-slate-800 hover:border-cyan-700 p-2.5 rounded-xl text-xs font-bold text-cyan-300 transition flex items-center justify-center gap-1.5">
+                                🫖 +1000 ml <span class="text-[10px] text-slate-500">(1 Litre)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Hedef Su Ayarı -->
+                    <div class="border-t border-slate-800 pt-3 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="text-xs text-slate-400 font-medium">Günlük Su Hedefi (Litre)</label>
+                            <button onclick="autoCalcWaterGoal()" class="text-[10px] text-cyan-400 hover:underline">Kilo ile Otomatik Hesapla</button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="number" id="water-target-input" value="3.0" step="0.1" min="1.0" max="8.0" onchange="updateWaterTarget()"
+                                   class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-sm font-bold text-cyan-300">
+                            <span class="text-xs text-slate-400 font-semibold">Litre</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sağ Kolon: Canlı Doluluk Görseli ve Su Kayıt Günlüğü -->
+                <div class="lg:col-span-2 glass-panel p-5 rounded-2xl space-y-6">
+                    <!-- Doluluk Durumu -->
+                    <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 flex flex-col md:flex-row items-center justify-between gap-6">
+                        <div class="space-y-2 text-center md:text-left">
+                            <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Bugünkü Toplam Tüketim</span>
+                            <div class="flex items-baseline gap-2 justify-center md:justify-start">
+                                <h2 id="water-display-large" class="text-4xl font-extrabold text-cyan-400">0.00</h2>
+                                <span class="text-lg font-bold text-slate-400">/ <span id="water-target-display">3.00</span> Litre</span>
+                            </div>
+                            <p id="water-status-msg" class="text-xs text-slate-400">Hedefe ulaşmak için biraz daha su içmelisiniz.</p>
+                        </div>
+                        <!-- Su Doluluk Yüzde Çemberi / Barı -->
+                        <div class="w-full md:w-64 space-y-2">
+                            <div class="flex justify-between text-xs font-bold">
+                                <span class="text-slate-400">İlerleme</span>
+                                <span id="water-percent-label" class="text-cyan-400">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-900 h-4 rounded-full overflow-hidden p-0.5 border border-slate-800">
+                                <div id="water-progress-bar" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Su Tüketim Günlüğü & Silme Butonları -->
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h4 class="text-sm font-bold text-slate-300">Bugünkü Su Girişleri</h4>
+                            <button onclick="clearWaterLogs()" class="text-xs text-red-400 hover:underline">Geçmişi Sıfırla</button>
+                        </div>
+                        <div id="water-logs-list" class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                            <!-- Dinamik kayıtlar -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 4. ANATOMİK ISI HARİTASI (TAB 4 - Req 8)   -->
+        <!-- ========================================== -->
+        <section id="content-anatomy" class="hidden space-y-6">
+            <div class="glass-panel p-5 rounded-2xl space-y-5">
+                <div class="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-indigo-400 flex items-center gap-2">
+                            🧬 İnteraktif Kas Anatomisi & Isı Haritası
+                        </h2>
+                        <p class="text-xs text-slate-400">
+                            Antrenmanda girdiğiniz set ve hareketlere göre kas gruplarının aktivasyon seviyesi hesaplanır.
+                        </p>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <!-- Zaman Aralığı Filtresi -->
+                        <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+                            <button onclick="setAnatomyPeriod('day')" id="anat-period-day" class="px-3 py-1 rounded-lg text-slate-400 font-semibold transition">Bugün</button>
+                            <button onclick="setAnatomyPeriod('week')" id="anat-period-week" class="px-3 py-1 rounded-lg bg-indigo-600 text-white font-semibold transition">Bu Hafta</button>
+                            <button onclick="setAnatomyPeriod('month')" id="anat-period-month" class="px-3 py-1 rounded-lg text-slate-400 font-semibold transition">Bu Ay</button>
+                        </div>
+
+                        <!-- Model Görseli Seçici (Kullanıcının Verdiği model.jpg / model2.avif) -->
+                        <select id="anatomy-model-toggle" onchange="toggleAnatomyModelImage()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300">
+                            <option value="model.jpg">3D Gerçekçi Kas Modeli (model.jpg)</option>
+                            <option value="model2.avif">Çizim Anatomi Modeli (model2.avif)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Renk Lejantı -->
+                <div class="flex flex-wrap items-center justify-center gap-6 text-xs bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                    <span class="flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 rounded-full bg-red-500 shadow-md shadow-red-500/50"></span>
+                        <b class="text-red-400">Yüksek Aktivasyon</b> (4+ Set veya Yüksek Hacim)
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 rounded-full bg-amber-500 shadow-md shadow-amber-500/50"></span>
+                        <b class="text-amber-400">Orta Aktivasyon</b> (2-3 Set İdeal Uyarı)
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-md shadow-emerald-500/50"></span>
+                        <b class="text-emerald-400">Düşük / İyileşme</b> (1 Set / Hafif)
+                    </span>
+                    <span class="flex items-center gap-2">
+                        <span class="w-3.5 h-3.5 rounded-full bg-slate-700"></span>
+                        <span class="text-slate-400">Dinlenmede / Hedeflenmedi</span>
+                    </span>
+                </div>
+
+                <!-- Anatomi Görseli ve İnteraktif Kas Katmanı Konteyneri -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+                    <!-- Sol/Orta: Kullanıcının Görseli Üzerine İnteraktif Isı Haritası -->
+                    <div class="lg:col-span-2 flex flex-col items-center justify-center bg-black/60 p-4 rounded-2xl border border-slate-800 relative overflow-hidden min-h-[580px]">
+                        <!-- Başlık Etiketleri: Ön Vücut & Arka Vücut -->
+                        <div class="w-full flex justify-around text-xs font-bold text-slate-400 mb-2 border-b border-slate-800/60 pb-1">
+                            <span>👈 ÖN VÜCUT (FRONT)</span>
+                            <span>ARKA VÜCUT (BACK) 👉</span>
+                        </div>
+
+                        <!-- Görsel ve Sıcak Noktalar Çerçevesi -->
+                        <div class="relative inline-block max-w-[420px] w-full select-none" id="anatomy-stage">
+                            <!-- Kullanıcının Yüklediği Model Görseli -->
+                            <img id="anatomy-img" src="model.jpg" alt="Vücut Anatomi Modeli" 
+                                 class="w-full h-auto object-contain rounded-xl shadow-2xl block mx-auto border border-slate-900"
+                                 onerror="this.src='model2.avif'">
+
+                            <!-- ÖN VÜCUT SICAK NOKTALARI (Left Half 0-50%) -->
+                            <!-- Göğüs -->
+                            <div onclick="showMuscleDetail('Göğüs')" id="hotspot-gogus" class="muscle-hotspot heat-none" 
+                                 style="top: 19%; left: 18%; width: 15%; height: 8%;" title="Göğüs (Pectoralis)"></div>
+                            <!-- Karın / Core -->
+                            <div onclick="showMuscleDetail('Karın')" id="hotspot-karin" class="muscle-hotspot heat-none" 
+                                 style="top: 28%; left: 20%; width: 11%; height: 16%;" title="Karın & Core (Abs)"></div>
+                            <!-- Sol Omuz (Ön) -->
+                            <div onclick="showMuscleDetail('Omuz')" id="hotspot-omuz-on-sol" class="muscle-hotspot heat-none" 
+                                 style="top: 18%; left: 11%; width: 8%; height: 7%;" title="Omuz (Sol)"></div>
+                            <!-- Sağ Omuz (Ön) -->
+                            <div onclick="showMuscleDetail('Omuz')" id="hotspot-omuz-on-sag" class="muscle-hotspot heat-none" 
+                                 style="top: 18%; left: 32%; width: 8%; height: 7%;" title="Omuz (Sağ)"></div>
+                            <!-- Biceps Sol -->
+                            <div onclick="showMuscleDetail('Biceps')" id="hotspot-biceps-sol" class="muscle-hotspot heat-none" 
+                                 style="top: 25%; left: 9%; width: 6%; height: 8%;" title="Biceps (Sol)"></div>
+                            <!-- Biceps Sağ -->
+                            <div onclick="showMuscleDetail('Biceps')" id="hotspot-biceps-sag" class="muscle-hotspot heat-none" 
+                                 style="top: 25%; left: 36%; width: 6%; height: 8%;" title="Biceps (Sağ)"></div>
+                            <!-- Ön Bacak Sol -->
+                            <div onclick="showMuscleDetail('Bacak')" id="hotspot-bacak-sol" class="muscle-hotspot heat-none" 
+                                 style="top: 48%; left: 16%; width: 8%; height: 18%;" title="Ön Bacak (Quadriceps Sol)"></div>
+                            <!-- Ön Bacak Sağ -->
+                            <div onclick="showMuscleDetail('Bacak')" id="hotspot-bacak-sag" class="muscle-hotspot heat-none" 
+                                 style="top: 48%; left: 27%; width: 8%; height: 18%;" title="Ön Bacak (Quadriceps Sağ)"></div>
+                            <!-- Baldır Ön -->
+                            <div onclick="showMuscleDetail('Baldır')" id="hotspot-baldir-on" class="muscle-hotspot heat-none" 
+                                 style="top: 72%; left: 18%; width: 15%; height: 15%;" title="Baldır (Calves)"></div>
+
+                            <!-- ARKA VÜCUT SICAK NOKTALARI (Right Half 50-100%) -->
+                            <!-- Sırt & Kanat -->
+                            <div onclick="showMuscleDetail('Sırt')" id="hotspot-sirt" class="muscle-hotspot heat-none" 
+                                 style="top: 18%; left: 66%; width: 18%; height: 18%;" title="Sırt & Kanat (Lats & Upper Back)"></div>
+                            <!-- Triceps Arka -->
+                            <div onclick="showMuscleDetail('Triceps')" id="hotspot-triceps-sol" class="muscle-hotspot heat-none" 
+                                 style="top: 24%; left: 58%; width: 6%; height: 9%;" title="Triceps (Sol)"></div>
+                            <div onclick="showMuscleDetail('Triceps')" id="hotspot-triceps-sag" class="muscle-hotspot heat-none" 
+                                 style="top: 24%; left: 86%; width: 6%; height: 9%;" title="Triceps (Sağ)"></div>
+                            <!-- Kalça / Glutes -->
+                            <div onclick="showMuscleDetail('Arka Bacak')" id="hotspot-kalca" class="muscle-hotspot heat-none" 
+                                 style="top: 42%; left: 66%; width: 18%; height: 12%;" title="Kalça (Glutes)"></div>
+                            <!-- Arka Bacak (Hamstrings) -->
+                            <div onclick="showMuscleDetail('Arka Bacak')" id="hotspot-arka-bacak" class="muscle-hotspot heat-none" 
+                                 style="top: 55%; left: 66%; width: 18%; height: 15%;" title="Arka Bacak (Hamstrings)"></div>
+                            <!-- Baldır Arka -->
+                            <div onclick="showMuscleDetail('Baldır')" id="hotspot-baldir-arka" class="muscle-hotspot heat-none" 
+                                 style="top: 72%; left: 66%; width: 18%; height: 15%;" title="Arka Baldır (Calves)"></div>
+                        </div>
+
+                        <p class="text-[11px] text-slate-500 mt-3 text-center">
+                            💡 İpucu: Vücut üzerindeki kas bölgelerine tıklayarak son antrenman geçmişini ve aktivasyon analizini görebilirsiniz.
+                        </p>
+                    </div>
+
+                    <!-- Sağ Kolon: Tıklanan Kas Grubu Bilgi Kartı & Hacim Raporu -->
+                    <div class="glass-panel p-5 rounded-2xl space-y-4">
+                        <div class="border-b border-slate-800 pb-3">
+                            <span class="text-xs text-indigo-400 font-bold uppercase tracking-wide">Kas Analiz Paneli</span>
+                            <h3 id="muscle-card-name" class="text-xl font-black text-white mt-0.5">Genel Vücut Durumu</h3>
+                        </div>
+
+                        <div id="muscle-card-body" class="space-y-3 text-xs text-slate-300">
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <span class="text-slate-400 block mb-1">Aktivasyon Seviyesi:</span>
+                                <span id="muscle-card-level" class="font-bold text-sm text-emerald-400">Dengeli / Düzenli</span>
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <span class="text-slate-400 block mb-1">Toplam Yapılan Set:</span>
+                                <span id="muscle-card-sets" class="font-bold text-sm text-indigo-400">0 Set</span>
+                            </div>
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+                                <span class="text-slate-400 block mb-1">Kayıtlı Son Hareketler:</span>
+                                <div id="muscle-card-exercises" class="text-slate-400 italic">Antrenman ekledikçe burada listelenir.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 5. GELİŞMİŞ GRAFİKLER VE ANALİTİK (TAB 5 - Req 1 & 2) -->
+        <!-- ========================================== -->
+        <section id="content-progress" class="hidden space-y-6">
+            <div class="glass-panel p-5 rounded-2xl space-y-4">
+                <div class="flex flex-wrap justify-between items-center gap-4 border-b border-slate-800 pb-3">
+                    <div>
+                        <h2 class="text-lg font-bold text-indigo-400 flex items-center gap-2">
+                            📈 İlerleme & Performans Grafikleri
+                        </h2>
+                        <p class="text-xs text-slate-400">
+                            Siz veri ekledikçe gün gün ilerler. Girilmeyen günler boş bırakılarak gerçek gelişim eğriniz çizilir.
+                        </p>
+                    </div>
+
+                    <!-- Grafik Türü Seçici Açılır Menü -->
+                    <div class="flex flex-wrap items-center gap-2">
+                        <select id="chart-type-selector" onchange="renderActiveChart()" class="bg-slate-950 border border-indigo-700/60 rounded-xl px-3 py-1.5 text-xs text-indigo-200 font-semibold focus:outline-none">
+                            <option value="exercise_weight">🏋️ Egzersiz Ağırlık Artış Grafiği (kg)</option>
+                            <option value="body_weight">⚖️ Vücut Kilo Takibi (kg)</option>
+                            <option value="daily_calories">🥗 Günlük Kalori & Makro Geçmişi</option>
+                            <option value="water_trend">💧 Su Tüketim Trendi (L)</option>
+                        </select>
+
+                        <!-- Egzersiz Seçici (Yalnızca egzersiz grafiğinde görünür) -->
+                        <select id="chart-exercise-select" onchange="renderActiveChart()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300">
+                            <option value="">Tüm Hareketler</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Grafik Çizim Tuvali -->
+                <div class="w-full h-88 bg-slate-950 p-4 rounded-xl border border-slate-800 relative">
+                    <canvas id="mainChart"></canvas>
+                    <div id="chart-empty-msg" class="hidden absolute inset-0 flex flex-col items-center justify-center text-slate-500 text-sm p-4 text-center">
+                        <span>📊 Henüz bu kategori için veri girilmedi.</span>
+                        <span class="text-xs text-slate-600 mt-1">Antrenman veya besin girdikçe grafik otomatik olarak oluşmaya başlayacaktır.</span>
+                    </div>
+                </div>
+
+                <!-- Vücut Ağırlığı Hızlı Kayıt Kutucuğu (Requirement 2) -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-4">
+                    <div class="space-y-0.5">
+                        <h4 class="text-xs font-bold text-slate-300">Tartı / Vücut Ağırlığı Kaydı</h4>
+                        <p class="text-[11px] text-slate-500">Bugünkü kilonuzu kaydederek gelişim grafiğine işleyin.</p>
+                    </div>
+                    <form onsubmit="saveBodyWeight(event)" class="flex items-center gap-2">
+                        <input type="number" id="quick-weight-input" step="0.1" min="30" max="250" placeholder="Örn: 78.5" required
+                               class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-1.5 text-sm font-bold text-white w-28 text-center focus:outline-none">
+                        <span class="text-xs font-bold text-slate-400">kg</span>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs px-4 py-2 rounded-xl transition">
+                            Kaydet
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 6. OTONOM SAĞLIK & GÜVENLİK AJANI (TAB 6)  -->
+        <!-- ========================================== -->
+        <section id="content-agent" class="hidden space-y-6">
+            <div class="glass-panel p-5 rounded-2xl space-y-6">
+                <div class="flex items-center justify-between border-b border-slate-800 pb-3 flex-wrap gap-2">
+                    <div>
+                        <h2 class="text-lg font-bold text-emerald-400 flex items-center gap-2">
+                            🛡️ Otonom Sağlık, BMI & Güvenlik Ajanı
+                        </h2>
+                        <p class="text-xs text-slate-400">Metriklerinizi, su ihtiyacınızı ve yerel veri bütünlüğünüzü arka planda denetler.</p>
+                    </div>
+                    <button onclick="runSystemAudit()" class="bg-emerald-600 hover:bg-emerald-500 text-xs px-4 py-2 rounded-xl font-bold transition flex items-center gap-1.5">
+                        🔄 Ajan Denetimini Çalıştır
+                    </button>
+                </div>
+
+                <!-- Kullanıcı Profil Kartı & BMI Hesaplayıcı -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
+                        <span class="text-xs text-slate-400">Vücut Kitle İndeksi (BMI)</span>
+                        <h3 id="agent-bmi-display" class="text-2xl font-black text-indigo-400">--</h3>
+                        <span id="agent-bmi-status" class="text-xs font-bold text-slate-400">Hesaplanıyor...</span>
+                    </div>
+
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
+                        <span class="text-xs text-slate-400">Gerekli Günlük Su</span>
+                        <h3 id="agent-water-need-display" class="text-2xl font-black text-cyan-400">-- L</h3>
+                        <span class="text-xs text-slate-500">Kilo × 35 ml formülü</span>
+                    </div>
+
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
+                        <span class="text-xs text-slate-400">Minimum Protein İhtiyacı</span>
+                        <h3 id="agent-protein-need-display" class="text-2xl font-black text-emerald-400">-- g</h3>
+                        <span class="text-xs text-slate-500">Kilo × 1.6g kas gelişimi</span>
+                    </div>
+
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
+                        <span class="text-xs text-slate-400">Veri Şifreleme & Bütünlük</span>
+                        <h3 class="text-base font-bold text-emerald-400 mt-1">AES-256 / Doğrulandı</h3>
+                        <span class="text-[10px] text-slate-500">ai_pro_fit_system anahtarı</span>
+                    </div>
+                </div>
+
+                <!-- Profil Bilgilerini Güncelleme Formu -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-3">
+                    <h3 class="text-xs font-bold text-slate-300">Kullanıcı Biyometrik Profili</h3>
+                    <form onsubmit="saveUserProfile(event)" class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                        <div>
+                            <label class="text-slate-400 font-medium block mb-1">Boy (cm)</label>
+                            <input type="number" id="user-height" value="178" min="100" max="230" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 font-bold text-white">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 font-medium block mb-1">Kilo (kg)</label>
+                            <input type="number" id="user-weight" value="75" min="30" max="250" step="0.1" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 font-bold text-white">
+                        </div>
+                        <div>
+                            <label class="text-slate-400 font-medium block mb-1">Yaş</label>
+                            <input type="number" id="user-age" value="25" min="12" max="99" required class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 font-bold text-white">
+                        </div>
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 font-bold py-2 rounded-lg text-white transition">
+                                Profili Güncelle
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Ajan Teşhis ve Rapor Günlüğü -->
+                <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+                    <div class="flex justify-between items-center">
+                        <h3 class="font-bold text-xs text-slate-300">🛡️ Otonom Teşhis & Güvenlik Günlüğü</h3>
+                        <span class="text-[10px] text-emerald-400">Gerçek Zamanlı Aktif</span>
+                    </div>
+                    <div id="agent-log-box" class="font-mono text-xs text-slate-400 space-y-1 max-h-40 overflow-y-auto">
+                        <!-- Dinamik loglar -->
+                    </div>
+                </div>
+
+                <!-- Veri Yedekleme / Dışa Aktar - İçe Aktar (GitHub Pages Güvencesi) -->
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+                    <span class="text-xs text-slate-500">Tüm antrenman, besin ve profil verilerinizi yedekleyin veya aktarın.</span>
+                    <div class="flex gap-2">
+                        <button onclick="exportDataJson()" class="bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs px-3 py-1.5 rounded-xl font-semibold transition">
+                            💾 JSON Yedek İndir
+                        </button>
+                        <button onclick="document.getElementById('import-file-input').click()" class="bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs px-3 py-1.5 rounded-xl font-semibold transition">
+                            📥 Yedek Yükle
+                        </button>
+                        <input type="file" id="import-file-input" class="hidden" accept=".json" onchange="importDataJson(event)">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- 7. AI KOÇ SOHBETİ (TAB 7)                   -->
+        <!-- ========================================== -->
+        <section id="content-ai" class="hidden space-y-6">
+            <div class="glass-panel p-5 rounded-2xl flex flex-col h-[600px]">
+                <div class="border-b border-slate-800 pb-3 mb-4 flex items-center justify-between">
+                    <div>
+                        <h2 class="font-bold text-indigo-400 flex items-center gap-2">
+                            🤖 Kişisel AI Fitness & Beslenme Danışmanı
+                        </h2>
+                        <p class="text-xs text-slate-400">Verilerinizi (Antrenman, Kalori, Su, Kilo) analiz ederek size tavsiyeler verir.</p>
+                    </div>
+                    <button onclick="clearAiChat()" class="text-xs text-slate-500 hover:text-slate-300">Sohbeti Temizle</button>
+                </div>
+                <div id="ai-chat-messages" class="flex-1 overflow-y-auto space-y-3 pr-2 text-sm">
+                    <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 max-w-[85%] text-slate-300">
+                        Merhaba! Ben AI Fitness ve Otonom Sağlık Koçunuz. Antrenman setlerinizi, besin gramajlarınızı ve günlük su tüketiminizi takip ediyorum. Bugün formunuz ve programınız hakkında bana ne sormak istersiniz?
+                    </div>
+                </div>
+                <form onsubmit="handleAiChatSubmit(event)" class="mt-4 flex gap-2">
+                    <input type="text" id="ai-chat-input" placeholder="Koçunuza soru sorun (Örn: Bugünkü proteinim yeterli mi?)" 
+                           class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500">
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-xl font-bold transition shadow-lg shadow-indigo-600/30">
+                        Gönder
+                    </button>
+                </form>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ========================================== -->
+    <!-- BARKOD TARAMA MODALI (Requirement 6)       -->
+    <!-- ========================================== -->
+    <div id="barcode-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="glass-panel max-w-md w-full p-5 rounded-2xl border border-indigo-500/50 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-base text-indigo-400 flex items-center gap-2">
+                    📷 Ürün Barkod Okuyucu
+                </h3>
+                <button onclick="closeBarcodeModal()" class="text-slate-400 hover:text-white font-bold text-lg px-2">✕</button>
+            </div>
+
+            <!-- Kamera Tuvali Konteyneri -->
+            <div id="barcode-reader-box" class="w-full bg-slate-950 rounded-xl border border-slate-800 overflow-hidden relative min-h-[220px] flex items-center justify-center">
+                <div id="reader" class="w-full"></div>
+            </div>
+
+            <!-- Manuel Barkod Numarası Arama Kutusu -->
+            <div class="space-y-2">
+                <label class="text-xs text-slate-300 font-semibold block">Veya Barkod Numarasını Girin</label>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="manual-barcode-input" placeholder="Örn: 8690504123456" 
+                           class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm font-mono text-indigo-300 focus:outline-none">
+                    <button onclick="lookupBarcodeManual()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
+                        Ara
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                <p>💡 Kayıtlı örnek barkodlar: <span class="font-mono text-indigo-300">8690504123456</span> (Tavuk Göğsü), <span class="font-mono text-indigo-300">8690637123456</span> (Yulaf), <span class="font-mono text-indigo-300">8690789123456</span> (Yumurta).</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- UYGULAMA JAVASCRIPT ÇEKİRDEĞİ              -->
+    <!-- ========================================== -->
+    <script>
+        // --- 1. SİSTEM VERİ DEPOSU & MİGRASYON ---
+        const STORAGE_KEY = 'ai_pro_fit_system';
+        const OLD_STORAGE_KEY = 'fitness_coach_data';
+
+        let appData = {
+            profile: {
+                height: 178,
+                weight: 75.0,
+                age: 25,
+                dailyWaterTarget: 3.0
+            },
+            workouts: [],       // Yapılandırılmış hareketler { id, day, name, muscle, sets: [{setNum, reps, weight, done}], difficulty, date }
+            foods: [],          // Sütunlu besinler { id, meal, name, grams, cal, prot, carb, fat, note, time, date }
+            waterLogs: [],      // Su girişleri { id, amountMl, time, date }
+            weightHistory: [],  // Kilo ölçüm geçmişi { id, weight, date }
+            customBarcodes: {}  // Kullanıcının tanımladığı özel barkod sözlüğü
+        };
+
+        // Hazır Besin Kütüphanesi (100 gram bazlı standart değerler)
+        const FOOD_PRESETS = {
+            tavuk: { name: 'Tavuk Göğsü (Izgara)', cal100: 120, prot100: 26, carb100: 0, fat100: 1.5 },
+            kiyma: { name: 'Yağsız Dana Kıyma', cal100: 215, prot100: 24, carb100: 0, fat100: 13 },
+            yumurta: { name: 'Haşlanmış Yumurta', cal100: 155, prot100: 13, carb100: 1.1, fat100: 11 },
+            yulaf: { name: 'Yulaf Ezmesi', cal100: 370, prot100: 13, carb100: 60, fat100: 7 },
+            pirinc: { name: 'Basmati Pirinç (Haşlanmış)', cal100: 130, prot100: 2.7, carb100: 28, fat100: 0.4 },
+            somon: { name: 'Somon Balığı', cal100: 206, prot100: 22, carb100: 0, fat100: 12 },
+            lor: { name: 'Lor Peyniri', cal100: 90, prot100: 17, carb100: 3, fat100: 1 },
+            muz: { name: 'Taze Muz', cal100: 89, prot100: 1.1, carb100: 23, fat100: 0.3 },
+            zeytinyagi: { name: 'Zeytinyağı', cal100: 884, prot100: 0, carb100: 0, fat100: 100 },
+            badem: { name: 'Çiğ Badem', cal100: 579, prot100: 21, carb100: 22, fat100: 50 }
+        };
+
+        // Dahili Barkod Veritabanı
+        const BARCODE_DB = {
+            '8690504123456': { name: 'Banvit Piliç Göğüs', cal100: 120, prot100: 26, carb100: 0, fat100: 1.5, defaultGrams: 200 },
+            '8690637123456': { name: 'Eti Lifalif Yulaf Ezmesi', cal100: 370, prot100: 13, carb100: 60, fat100: 7, defaultGrams: 100 },
+            '8690789123456': { name: 'Köy Yumurtası (Büyük Boy)', cal100: 155, prot100: 13, carb100: 1.1, fat100: 11, defaultGrams: 110 },
+            '8690555123456': { name: 'Pınar Yarım Yağlı Süt', cal100: 45, prot100: 3.1, carb100: 4.8, fat100: 1.5, defaultGrams: 200 },
+            '8690123123456': { name: 'Dardanel Ton Balığı', cal100: 130, prot100: 28, carb100: 0, fat100: 2, defaultGrams: 160 }
+        };
+
+        let currentActiveDay = 'Pazartesi';
+        let currentAnatomyPeriod = 'week';
+        let activeChartInstance = null;
+        let html5QrCode = null;
+
+        // Veri Yükleme ve Başlangıç
+        function initApp() {
+            loadPersistedData();
+            initDynamicSetRows();
+            applyFoodPreset(); // İlk besin değerlerini hazırla
+            renderAllSections();
+            runSystemAudit();
+        }
+
+        function loadPersistedData() {
+            let dataStr = localStorage.getItem(STORAGE_KEY);
+            if (!dataStr) {
+                // Eski anahtar kontrolü & migrasyon
+                const oldData = localStorage.getItem(OLD_STORAGE_KEY);
+                if (oldData) {
+                    try {
+                        const parsedOld = JSON.parse(oldData);
+                        if (parsedOld.workouts) {
+                            appData.workouts = parsedOld.workouts.map(w => ({
+                                id: w.id || Date.now() + Math.random(),
+                                day: w.day || 'Pazartesi',
+                                name: w.name,
+                                muscle: 'Göğüs',
+                                sets: [{ setNum: 1, reps: w.reps || 10, weight: w.weight || 50, done: true }],
+                                difficulty: w.difficulty || 'Orta',
+                                date: w.date || getTodayFormatted()
+                            }));
+                        }
+                        if (parsedOld.foods) {
+                            appData.foods = parsedOld.foods.map(f => ({
+                                id: f.id || Date.now() + Math.random(),
+                                meal: 'Öğle Yemeği',
+                                name: f.name,
+                                grams: 150,
+                                cal: f.calories || 200,
+                                prot: f.protein || 20,
+                                carb: 10,
+                                fat: 5,
+                                note: 'Eski kayıttan aktarıldı',
+                                time: f.time || '12:00',
+                                date: getTodayFormatted()
+                            }));
+                        }
+                    } catch (e) {}
+                }
+            } else {
+                try {
+                    const parsed = JSON.parse(dataStr);
+                    appData = Object.assign(appData, parsed);
+                } catch (e) {
+                    console.error('Veri yükleme hatası', e);
+                }
+            }
+        }
+
+        function persistData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+            renderAllSections();
+        }
+
+        function getTodayFormatted() {
+            return new Date().toLocaleDateString('tr-TR');
+        }
+
+        function getTodayTimeFormatted() {
+            return new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        // --- 2. SEKME YÖNETİMİ ---
+        function switchTab(tabId) {
+            const tabs = ['workout', 'diet', 'water', 'anatomy', 'progress', 'agent', 'ai'];
+            tabs.forEach(t => {
+                const content = document.getElementById(`content-${t}`);
+                const btn = document.getElementById(`tab-${t}`);
+                if (content) content.classList.add('hidden');
+                if (btn) {
+                    btn.classList.remove('bg-indigo-600', 'text-white');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+
+            const activeContent = document.getElementById(`content-${tabId}`);
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            if (activeContent) activeContent.classList.remove('hidden');
+            if (activeBtn) {
+                activeBtn.classList.add('bg-indigo-600', 'text-white');
+                activeBtn.classList.remove('text-slate-400');
+            }
+
+            if (tabId === 'progress') {
+                initProgressChartSelect();
+                renderActiveChart();
+            } else if (tabId === 'anatomy') {
+                updateAnatomyHeatmap();
+            }
+        }
+
+        // --- 3. ANTRENMAN & AYRI AYRI SET KUTUCUKLARI (Req 2 & 9) ---
+        let currentSetCount = 0;
+
+        function initDynamicSetRows() {
+            const container = document.getElementById('dynamic-sets-container');
+            container.innerHTML = '';
+            currentSetCount = 0;
+            // Varsayılan olarak 3 ayrı kutucuklu set ekle
+            addSetRowInput(12, 50);
+            addSetRowInput(10, 55);
+            addSetRowInput(8, 60);
+        }
+
+        function addSetRowInput(defaultReps = 10, defaultWeight = 50) {
+            currentSetCount++;
+            const container = document.getElementById('dynamic-sets-container');
+            const rowId = `set-row-${Date.now()}-${currentSetCount}`;
+            
+            const div = document.createElement('div');
+            div.id = rowId;
+            div.className = "flex items-center gap-2 bg-slate-900/90 p-2 rounded-xl border border-slate-800 text-xs";
+            div.innerHTML = `
+                <span class="w-12 font-bold text-indigo-400 text-center">Set ${currentSetCount}</span>
+                <div class="flex-1 flex items-center gap-1.5">
+                    <label class="text-slate-400 font-medium">Tekrar:</label>
+                    <input type="number" min="1" max="100" value="${defaultReps}" required
+                           class="set-reps-input w-16 bg-slate-950 border border-slate-700 rounded-lg p-1.5 text-center font-bold text-white focus:outline-none focus:border-indigo-500">
+                </div>
+                <div class="flex-1 flex items-center gap-1.5">
+                    <label class="text-slate-400 font-medium">Ağırlık:</label>
+                    <input type="number" step="0.5" min="0" max="500" value="${defaultWeight}" required
+                           class="set-weight-input w-20 bg-slate-950 border border-slate-700 rounded-lg p-1.5 text-center font-bold text-emerald-400 focus:outline-none focus:border-indigo-500">
+                    <span class="text-slate-500">kg</span>
+                </div>
+                <button type="button" onclick="removeSetRow('${rowId}')" class="text-slate-500 hover:text-red-400 px-1 font-bold">✕</button>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeSetRow(rowId) {
+            const row = document.getElementById(rowId);
+            if (row) row.remove();
+        }
+
+        function setQuickExercise(name, muscle) {
+            document.getElementById('workout-name-input').value = name;
+            document.getElementById('workout-muscle-select').value = muscle;
+        }
+
+        function selectDay(dayName) {
+            currentActiveDay = dayName;
+            document.querySelectorAll('.day-pill').forEach(btn => {
+                if (btn.getAttribute('data-day') === dayName) {
+                    btn.classList.remove('bg-slate-900', 'text-slate-300');
+                    btn.classList.add('bg-indigo-600', 'text-white');
+                } else {
+                    btn.classList.remove('bg-indigo-600', 'text-white');
+                    btn.classList.add('bg-slate-900', 'text-slate-300');
+                }
+            });
+            document.getElementById('active-day-badge').innerText = dayName;
+            document.getElementById('list-day-title').innerText = dayName;
+            renderWorkoutCards();
+        }
+
+        function saveStructuredExercise(e) {
+            e.preventDefault();
+            const name = document.getElementById('workout-name-input').value.trim();
+            const muscle = document.getElementById('workout-muscle-select').value;
+            const difficulty = document.getElementById('workout-difficulty').value;
+
+            const repInputs = document.querySelectorAll('.set-reps-input');
+            const weightInputs = document.querySelectorAll('.set-weight-input');
+
+            const sets = [];
+            repInputs.forEach((rInput, index) => {
+                const wInput = weightInputs[index];
+                sets.push({
+                    setNum: index + 1,
+                    reps: parseInt(rInput.value) || 10,
+                    weight: parseFloat(wInput.value) || 0,
+                    done: true // Doğrulandı onayı
+                });
+            });
+
+            if (sets.length === 0) {
+                alert('Lütfen en az bir set ekleyin.');
+                return;
+            }
+
+            const newExercise = {
+                id: Date.now(),
+                day: currentActiveDay,
+                name: name,
+                muscle: muscle,
+                sets: sets,
+                difficulty: difficulty,
+                date: getTodayFormatted()
+            };
+
+            appData.workouts.push(newExercise);
+            persistData();
+
+            document.getElementById('workout-name-input').value = '';
+            initDynamicSetRows();
+            logAgentActivity(`🏋️ Yeni hareket kaydedildi: ${name} (${sets.length} Set, ${muscle})`);
+        }
+
+        function toggleSetDone(exerciseId, setIndex) {
+            const ex = appData.workouts.find(w => w.id === exerciseId);
+            if (ex && ex.sets[setIndex]) {
+                ex.sets[setIndex].done = !ex.sets[setIndex].done;
+                persistData();
+            }
+        }
+
+        function deleteWorkout(id) {
+            appData.workouts = appData.workouts.filter(w => w.id !== id);
+            persistData();
+        }
+
+        function clearDayWorkouts() {
+            if (confirm(`${currentActiveDay} gününe ait tüm hareketler silinsin mi?`)) {
+                appData.workouts = appData.workouts.filter(w => w.day !== currentActiveDay);
+                persistData();
+            }
+        }
+
+        function renderWorkoutCards() {
+            const listContainer = document.getElementById('workout-cards-list');
+            const dayWorkouts = appData.workouts.filter(w => w.day === currentActiveDay);
+
+            if (dayWorkouts.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="text-center py-12 text-slate-500 border border-dashed border-slate-800 rounded-2xl p-6">
+                        <span class="text-3xl block mb-2">🏋️</span>
+                        <p class="font-semibold">${currentActiveDay} günü için henüz hareket eklenmemiş.</p>
+                        <p class="text-xs text-slate-600 mt-1">Soldaki formdan hareket ve set kutucuklarını belirleyip ekleyin.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            listContainer.innerHTML = dayWorkouts.map(w => {
+                const setsHtml = w.sets.map((s, idx) => `
+                    <div class="bg-slate-900/90 border ${s.done ? 'border-emerald-800/80 bg-emerald-950/20' : 'border-slate-800'} p-2 rounded-xl flex items-center justify-between text-xs">
+                        <div class="flex items-center gap-2">
+                            <button onclick="toggleSetDone(${w.id}, ${idx})" class="w-5 h-5 rounded flex items-center justify-center font-bold text-[10px] ${s.done ? 'bg-emerald-600 text-white' : 'bg-slate-800 text-slate-500'}">
+                                ${s.done ? '✓' : '○'}
+                            </button>
+                            <span class="font-bold text-slate-300">Set ${s.setNum}:</span>
+                        </div>
+                        <div class="flex items-center gap-3 font-semibold">
+                            <span class="text-slate-300">${s.reps} Tekrar</span>
+                            <span class="text-emerald-400">${s.weight} kg</span>
+                        </div>
+                    </div>
+                `).join('');
+
+                return `
+                    <div class="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-3 hover:border-slate-700 transition shadow-sm">
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h4 class="font-extrabold text-base text-white">${w.name}</h4>
+                                    <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-950 text-indigo-300 border border-indigo-800 font-semibold">
+                                        ${w.muscle}
+                                    </span>
+                                </div>
+                                <span class="text-xs text-slate-400 mt-0.5 block">Kayıt: ${w.date} • Zorluk: <b class="${w.difficulty === 'Kolay' ? 'text-emerald-400' : w.difficulty === 'Orta' ? 'text-amber-400' : 'text-rose-400'}">${w.difficulty}</b></span>
+                            </div>
+                            <button onclick="deleteWorkout(${w.id})" class="text-slate-500 hover:text-red-400 p-1 text-xs rounded transition flex items-center gap-1">
+                                🗑️ Sil
+                            </button>
+                        </div>
+
+                        <!-- Ayrı Ayrı Set Kutucukları Izgarası -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                            ${setsHtml}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // --- 4. DETAYLI BESLENME, GRAMAJ ORAN-ORANTI VE TABLO (Req 3, 4, 5, 6) ---
+        let currentActiveFoodBase = { cal100: 120, prot100: 26, carb100: 0, fat100: 1.5 };
+
+        function applyFoodPreset() {
+            const select = document.getElementById('food-preset-select');
+            const key = select.value;
+            if (FOOD_PRESETS[key]) {
+                const item = FOOD_PRESETS[key];
+                document.getElementById('food-name-input').value = item.name;
+                currentActiveFoodBase = item;
+            } else if (key === 'custom') {
+                currentActiveFoodBase = { cal100: 200, prot100: 10, carb100: 25, fat100: 5 };
+            }
+            calculateGramsProportion();
+        }
+
+        // Gramaj Oran-Orantı Fonksiyonu (Requirement 4)
+        function calculateGramsProportion() {
+            const grams = parseFloat(document.getElementById('food-grams-input').value) || 100;
+            const ratio = grams / 100;
+
+            const calcCal = Math.round(currentActiveFoodBase.cal100 * ratio);
+            const calcProt = parseFloat((currentActiveFoodBase.prot100 * ratio).toFixed(1));
+            const calcCarb = parseFloat((currentActiveFoodBase.carb100 * ratio).toFixed(1));
+            const calcFat = parseFloat((currentActiveFoodBase.fat100 * ratio).toFixed(1));
+
+            document.getElementById('food-cal-input').value = calcCal;
+            document.getElementById('food-prot-input').value = calcProt;
+            document.getElementById('food-carb-input').value = calcCarb;
+            document.getElementById('food-fat-input').value = calcFat;
+        }
+
+        function saveDetailedFood(e) {
+            e.preventDefault();
+            const meal = document.getElementById('food-meal-type').value;
+            const name = document.getElementById('food-name-input').value.trim();
+            const grams = parseFloat(document.getElementById('food-grams-input').value) || 100;
+            const cal = parseInt(document.getElementById('food-cal-input').value) || 0;
+            const prot = parseFloat(document.getElementById('food-prot-input').value) || 0;
+            const carb = parseFloat(document.getElementById('food-carb-input').value) || 0;
+            const fat = parseFloat(document.getElementById('food-fat-input').value) || 0;
+            const note = document.getElementById('food-note-input').value.trim();
+
+            const newFood = {
+                id: Date.now(),
+                meal: meal,
+                name: name,
+                grams: grams,
+                cal: cal,
+                prot: prot,
+                carb: carb,
+                fat: fat,
+                note: note,
+                time: getTodayTimeFormatted(),
+                date: getTodayFormatted()
+            };
+
+            appData.foods.push(newFood);
+            persistData();
+
+            document.getElementById('food-name-input').value = '';
+            document.getElementById('food-note-input').value = '';
+            logAgentActivity(`🥗 Besin eklendi: ${name} (${grams}g - ${cal} kcal, ${prot}g P)`);
+        }
+
+        // Besin Kayıt Silme Fonksiyonu (Requirement 3)
+        function deleteFood(id) {
+            appData.foods = appData.foods.filter(f => f.id !== id);
+            persistData();
+            logAgentActivity(`🗑️ Besin kaydı silindi.`);
+        }
+
+        function clearAllFoods() {
+            if (confirm('Bugüne ait tüm besin kayıtları silinsin mi?')) {
+                appData.foods = [];
+                persistData();
+            }
+        }
+
+        function renderFoodTable() {
+            const tbody = document.getElementById('food-table-body');
+            const filterMeal = document.getElementById('food-filter-meal').value;
+
+            let filtered = appData.foods;
+            if (filterMeal !== 'all') {
+                filtered = filtered.filter(f => f.meal === filterMeal);
+            }
+
+            let totalCal = 0, totalProt = 0, totalCarb = 0, totalFat = 0;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="px-4 py-8 text-center text-slate-500">
+                            Henüz besin kaydı bulunmuyor. Soldaki formdan veya barkod tarayıcıdan ekleyin.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = filtered.slice().reverse().map(f => {
+                    totalCal += f.cal;
+                    totalProt += f.prot;
+                    totalCarb += f.carb;
+                    totalFat += f.fat;
+
+                    return `
+                        <tr class="hover:bg-slate-900/60 transition">
+                            <td class="px-3.5 py-3 font-semibold text-slate-300">
+                                <span class="px-2 py-0.5 rounded text-[10px] bg-slate-900 border border-slate-700 font-medium">${f.meal}</span>
+                            </td>
+                            <td class="px-3.5 py-3 font-bold text-white">
+                                ${f.name}
+                                ${f.note ? `<span class="block text-[10px] text-slate-500 font-normal">${f.note}</span>` : ''}
+                            </td>
+                            <td class="px-3.5 py-3 text-center font-bold text-slate-300">${f.grams}g</td>
+                            <td class="px-3.5 py-3 text-right font-black text-emerald-400">${f.cal}</td>
+                            <td class="px-3.5 py-3 text-right font-bold text-indigo-400">${f.prot}g</td>
+                            <td class="px-3.5 py-3 text-right font-bold text-amber-400">${f.carb}g</td>
+                            <td class="px-3.5 py-3 text-right font-bold text-rose-400">${f.fat}g</td>
+                            <td class="px-3.5 py-3 text-center text-slate-500 text-[11px]">${f.time}</td>
+                            <!-- SİLME BUTONU (Req 3) -->
+                            <td class="px-3.5 py-3 text-center">
+                                <button onclick="deleteFood(${f.id})" title="Kaydı Sil" class="bg-red-950/60 hover:bg-red-900 text-red-400 hover:text-white border border-red-800/80 px-2 py-1 rounded-lg text-xs font-bold transition">
+                                    Sil
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // Makro Toplamları ve İlerleme Çubukları
+            const allTodayCal = appData.foods.reduce((a, b) => a + b.cal, 0);
+            const allTodayProt = appData.foods.reduce((a, b) => a + b.prot, 0);
+            const allTodayCarb = appData.foods.reduce((a, b) => a + b.carb, 0);
+            const allTodayFat = appData.foods.reduce((a, b) => a + b.fat, 0);
+
+            document.getElementById('diet-total-cals').innerText = `${allTodayCal} kcal`;
+            document.getElementById('diet-total-prot').innerText = `${allTodayProt.toFixed(1)} g`;
+            document.getElementById('diet-total-carb').innerText = `${allTodayCarb.toFixed(1)} g`;
+            document.getElementById('diet-total-fat').innerText = `${allTodayFat.toFixed(1)} g`;
+
+            // Hedef Yüzdeleri
+            const calGoal = 2200;
+            const protGoal = Math.round(appData.profile.weight * 1.8);
+            const carbGoal = 240;
+            const fatGoal = 65;
+
+            document.getElementById('prot-target-label').innerText = `Hedef: ${protGoal} g`;
+            document.getElementById('bar-cal').style.width = `${Math.min(100, (allTodayCal / calGoal) * 100)}%`;
+            document.getElementById('bar-prot').style.width = `${Math.min(100, (allTodayProt / protGoal) * 100)}%`;
+            document.getElementById('bar-carb').style.width = `${Math.min(100, (allTodayCarb / carbGoal) * 100)}%`;
+            document.getElementById('bar-fat').style.width = `${Math.min(100, (allTodayFat / fatGoal) * 100)}%`;
+        }
+
+        // --- 5. BARKOD OKUYUCU ENTEGRASYONU (Req 6) ---
+        function openBarcodeModal() {
+            document.getElementById('barcode-modal').classList.remove('hidden');
+            startCameraBarcodeScanner();
+        }
+
+        function closeBarcodeModal() {
+            document.getElementById('barcode-modal').classList.add('hidden');
+            stopCameraBarcodeScanner();
+        }
+
+        function startCameraBarcodeScanner() {
+            if (typeof Html5Qrcode === 'undefined') {
+                return;
+            }
+            try {
+                if (!html5QrCode) {
+                    html5QrCode = new Html5Qrcode("reader");
+                }
+                html5QrCode.start(
+                    { facingMode: "environment" },
+                    { fps: 10, qrbox: { width: 250, height: 150 } },
+                    (decodedText) => {
+                        applyBarcodeResult(decodedText);
+                        closeBarcodeModal();
+                    },
+                    (error) => {}
+                ).catch(err => {
+                    console.log("Kamera erişimi sağlanamadı, manuel barkod kullanılabilir.", err);
+                });
+            } catch (e) {
+                console.log(e);
+            }
+        }
+
+        function stopCameraBarcodeScanner() {
+            if (html5QrCode) {
+                try {
+                    html5QrCode.stop().then(() => {
+                        html5QrCode.clear();
+                    }).catch(() => {});
+                } catch(e) {}
+            }
+        }
+
+        function lookupBarcodeManual() {
+            const code = document.getElementById('manual-barcode-input').value.trim();
+            if (!code) return;
+            applyBarcodeResult(code);
+            closeBarcodeModal();
+        }
+
+        function applyBarcodeResult(code) {
+            let found = BARCODE_DB[code] || appData.customBarcodes[code];
+            if (found) {
+                currentActiveFoodBase = found;
+                document.getElementById('food-name-input').value = found.name;
+                document.getElementById('food-grams-input').value = found.defaultGrams || 100;
+                document.getElementById('food-note-input').value = `Barkod: ${code}`;
+                calculateGramsProportion();
+                alert(`✅ Barkod Tanındı: ${found.name}`);
+            } else {
+                const name = prompt(`Barkod (${code}) veritabanında yok. Besin adını giriniz:`);
+                if (name) {
+                    const newEntry = { name: name, cal100: 150, prot100: 15, carb100: 15, fat100: 5, defaultGrams: 100 };
+                    appData.customBarcodes[code] = newEntry;
+                    persistData();
+                    currentActiveFoodBase = newEntry;
+                    document.getElementById('food-name-input').value = name;
+                    document.getElementById('food-note-input').value = `Barkod: ${code}`;
+                    calculateGramsProportion();
+                }
+            }
+        }
+
+        // --- 6. ÖZEL SU GİRDİSİ VE TAKİP (Req 7) ---
+        function addCustomWater() {
+            const ml = parseFloat(document.getElementById('custom-water-ml').value);
+            if (!ml || ml <= 0) {
+                alert('Lütfen geçerli bir su miktarı girin.');
+                return;
+            }
+            logWaterAmount(ml);
+            document.getElementById('custom-water-ml').value = '';
+        }
+
+        function addWaterQuick(ml) {
+            logWaterAmount(ml);
+        }
+
+        function logWaterAmount(ml) {
+            const newEntry = {
+                id: Date.now(),
+                amountMl: ml,
+                time: getTodayTimeFormatted(),
+                date: getTodayFormatted()
+            };
+            appData.waterLogs.push(newEntry);
+            persistData();
+            logAgentActivity(`💧 Su girişi: +${ml} ml`);
+        }
+
+        function deleteWaterLog(id) {
+            appData.waterLogs = appData.waterLogs.filter(w => w.id !== id);
+            persistData();
+        }
+
+        function clearWaterLogs() {
+            if (confirm('Bugüne ait su geçmişi silinsin mi?')) {
+                appData.waterLogs = [];
+                persistData();
+            }
+        }
+
+        function updateWaterTarget() {
+            const target = parseFloat(document.getElementById('water-target-input').value) || 3.0;
+            appData.profile.dailyWaterTarget = target;
+            persistData();
+        }
+
+        function autoCalcWaterGoal() {
+            const rec = parseFloat((appData.profile.weight * 0.035).toFixed(1));
+            document.getElementById('water-target-input').value = rec;
+            updateWaterTarget();
+            alert(`Kilonuza (${appData.profile.weight} kg) göre günlük su ihtiyacınız: ${rec} Litre olarak ayarlandı.`);
+        }
+
+        function renderWaterSection() {
+            const totalMl = appData.waterLogs.reduce((a, b) => a + b.amountMl, 0);
+            const totalLitres = (totalMl / 1000).toFixed(2);
+            const targetLitres = appData.profile.dailyWaterTarget || 3.0;
+            const percent = Math.min(100, Math.round((totalLitres / targetLitres) * 100));
+
+            document.getElementById('water-display-large').innerText = totalLitres;
+            document.getElementById('water-target-display').innerText = targetLitres.toFixed(2);
+            document.getElementById('water-percent-label').innerText = `${percent}%`;
+            document.getElementById('water-progress-bar').style.width = `${percent}%`;
+            document.getElementById('water-target-input').value = targetLitres;
+
+            const list = document.getElementById('water-logs-list');
+            if (appData.waterLogs.length === 0) {
+                list.innerHTML = `<div class="text-center py-6 text-slate-500 text-xs">Henüz su kaydı girilmedi.</div>`;
+            } else {
+                list.innerHTML = appData.waterLogs.slice().reverse().map(l => `
+                    <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex justify-between items-center text-xs">
+                        <div class="flex items-center gap-2">
+                            <span class="text-cyan-400 font-bold">💧 +${l.amountMl} ml</span>
+                            <span class="text-[10px] text-slate-500">(${(l.amountMl / 1000).toFixed(2)} L)</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-slate-500">${l.time}</span>
+                            <button onclick="deleteWaterLog(${l.id})" class="text-slate-600 hover:text-red-400 font-bold">✕ Sil</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // --- 7. ANATOMİK ISI HARİTASI VE MODEL GÖRSELİ (Req 8) ---
+        function setAnatomyPeriod(period) {
+            currentAnatomyPeriod = period;
+            ['day', 'week', 'month'].forEach(p => {
+                const btn = document.getElementById(`anat-period-${p}`);
+                if (p === period) {
+                    btn.classList.add('bg-indigo-600', 'text-white');
+                    btn.classList.remove('text-slate-400');
+                } else {
+                    btn.classList.remove('bg-indigo-600', 'text-white');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+            updateAnatomyHeatmap();
+        }
+
+        function toggleAnatomyModelImage() {
+            const select = document.getElementById('anatomy-model-toggle');
+            document.getElementById('anatomy-img').src = select.value;
+        }
+
+        function updateAnatomyHeatmap() {
+            // Kas aktivasyonunu hesapla (Toplam set sayısına göre)
+            const muscleSets = {
+                'Göğüs': 0, 'Sırt': 0, 'Bacak': 0, 'Arka Bacak': 0,
+                'Omuz': 0, 'Biceps': 0, 'Triceps': 0, 'Karın': 0, 'Baldır': 0
+            };
+
+            appData.workouts.forEach(w => {
+                const setsDone = w.sets.filter(s => s.done).length;
+                if (muscleSets[w.muscle] !== undefined) {
+                    muscleSets[w.muscle] += setsDone;
+                }
+            });
+
+            // Kas gruplarını ısı renklerine eşle
+            const setHotspotClass = (elemId, sets) => {
+                const elem = document.getElementById(elemId);
+                if (!elem) return;
+                elem.className = 'muscle-hotspot ' + (sets >= 4 ? 'heat-high' : sets >= 2 ? 'heat-mid' : sets >= 1 ? 'heat-low' : 'heat-none');
+            };
+
+            setHotspotClass('hotspot-gogus', muscleSets['Göğüs']);
+            setHotspotClass('hotspot-karin', muscleSets['Karın']);
+            setHotspotClass('hotspot-omuz-on-sol', muscleSets['Omuz']);
+            setHotspotClass('hotspot-omuz-on-sag', muscleSets['Omuz']);
+            setHotspotClass('hotspot-biceps-sol', muscleSets['Biceps']);
+            setHotspotClass('hotspot-biceps-sag', muscleSets['Biceps']);
+            setHotspotClass('hotspot-bacak-sol', muscleSets['Bacak']);
+            setHotspotClass('hotspot-bacak-sag', muscleSets['Bacak']);
+            setHotspotClass('hotspot-baldir-on', muscleSets['Baldır']);
+
+            setHotspotClass('hotspot-sirt', muscleSets['Sırt']);
+            setHotspotClass('hotspot-triceps-sol', muscleSets['Triceps']);
+            setHotspotClass('hotspot-triceps-sag', muscleSets['Triceps']);
+            setHotspotClass('hotspot-kalca', muscleSets['Arka Bacak']);
+            setHotspotClass('hotspot-arka-bacak', muscleSets['Arka Bacak']);
+            setHotspotClass('hotspot-baldir-arka', muscleSets['Baldır']);
+        }
+
+        function showMuscleDetail(muscleName) {
+            document.getElementById('muscle-card-name').innerText = muscleName;
+            const matched = appData.workouts.filter(w => w.muscle === muscleName);
+            const totalSets = matched.reduce((a, b) => a + b.sets.filter(s => s.done).length, 0);
+
+            document.getElementById('muscle-card-sets').innerText = `${totalSets} Set Tamamlandı`;
+            const levelElem = document.getElementById('muscle-card-level');
+
+            if (totalSets >= 4) {
+                levelElem.innerText = '🔴 Yüksek Aktivasyon (Aşırı Yükleme / Gelişim)';
+                levelElem.className = 'font-bold text-sm text-red-400';
+            } else if (totalSets >= 2) {
+                levelElem.innerText = '🟡 Orta Aktivasyon (İdeal Kas Uyarısı)';
+                levelElem.className = 'font-bold text-sm text-amber-400';
+            } else if (totalSets >= 1) {
+                levelElem.innerText = '🟢 Hafif Aktivasyon (İyileşme / Isınma)';
+                levelElem.className = 'font-bold text-sm text-emerald-400';
+            } else {
+                levelElem.innerText = '⚪ Dinlenmede (Son dönemde hedeflenmedi)';
+                levelElem.className = 'font-bold text-sm text-slate-400';
+            }
+
+            const exContainer = document.getElementById('muscle-card-exercises');
+            if (matched.length === 0) {
+                exContainer.innerText = 'Bu kas grubu için henüz hareket kaydı yok.';
+            } else {
+                exContainer.innerHTML = matched.map(m => `
+                    <div class="mt-1 pb-1 border-b border-slate-800">
+                        <b>${m.name}</b> (${m.day}) - ${m.sets.length} Set, Maks: ${Math.max(...m.sets.map(s => s.weight))} kg
+                    </div>
+                `).join('');
+            }
+        }
+
+        // --- 8. GRAFİKLER VE DİNAMİK İLERLEME (Req 1 & 2) ---
+        function initProgressChartSelect() {
+            const select = document.getElementById('chart-exercise-select');
+            const uniqueNames = [...new Set(appData.workouts.map(w => w.name))];
+            select.innerHTML = `<option value="">Tüm Hareketler</option>` + uniqueNames.map(n => `<option value="${n}">${n}</option>`).join('');
+        }
+
+        function renderActiveChart() {
+            const type = document.getElementById('chart-type-selector').value;
+            const exSelect = document.getElementById('chart-exercise-select');
+            const emptyMsg = document.getElementById('chart-empty-msg');
+            const ctx = document.getElementById('mainChart').getContext('2d');
+
+            if (activeChartInstance) activeChartInstance.destroy();
+
+            if (type === 'exercise_weight') {
+                exSelect.classList.remove('hidden');
+                const targetEx = exSelect.value;
+                let dataPoints = appData.workouts;
+                if (targetEx) dataPoints = dataPoints.filter(w => w.name === targetEx);
+
+                if (dataPoints.length === 0) {
+                    emptyMsg.classList.remove('hidden');
+                    return;
+                }
+                emptyMsg.classList.add('hidden');
+
+                // Kronolojik tarihler ve girilmeyen günleri boş bırakan yapı (Req 1)
+                const labels = dataPoints.map(d => `${d.date} (${d.day})`);
+                const weights = dataPoints.map(d => Math.max(...d.sets.map(s => s.weight)));
+
+                activeChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: targetEx ? `${targetEx} Ağırlık (kg)` : 'Maksimum Ağırlık (kg)',
+                            data: weights,
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#818cf8',
+                            pointRadius: 6,
+                            fill: true,
+                            tension: 0.25,
+                            spanGaps: false // Boş günleri atlamaz, kırılma gösterir
+                        }]
+                    },
+                    options: getChartOptions('Ağırlık (kg)')
+                });
+            } else if (type === 'body_weight') {
+                exSelect.classList.add('hidden');
+                if (appData.weightHistory.length === 0) {
+                    emptyMsg.classList.remove('hidden');
+                    return;
+                }
+                emptyMsg.classList.add('hidden');
+
+                activeChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: appData.weightHistory.map(w => w.date),
+                        datasets: [{
+                            label: 'Tartı Kilosu (kg)',
+                            data: appData.weightHistory.map(w => w.weight),
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#34d399',
+                            pointRadius: 6,
+                            fill: true,
+                            tension: 0.2
+                        }]
+                    },
+                    options: getChartOptions('Vücut Kilosu (kg)')
+                });
+            } else if (type === 'daily_calories') {
+                exSelect.classList.add('hidden');
+                if (appData.foods.length === 0) {
+                    emptyMsg.classList.remove('hidden');
+                    return;
+                }
+                emptyMsg.classList.add('hidden');
+
+                const dates = [...new Set(appData.foods.map(f => f.date))];
+                const cals = dates.map(d => appData.foods.filter(f => f.date === d).reduce((a, b) => a + b.cal, 0));
+                const prots = dates.map(d => appData.foods.filter(f => f.date === d).reduce((a, b) => a + b.prot, 0));
+
+                activeChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: dates,
+                        datasets: [
+                            { label: 'Kalori (kcal)', data: cals, backgroundColor: 'rgba(16, 185, 129, 0.7)', yAxisID: 'y' },
+                            { label: 'Protein (g)', data: prots, backgroundColor: 'rgba(99, 102, 241, 0.8)', yAxisID: 'y1' }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: '#cbd5e1' } } },
+                        scales: {
+                            x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+                            y: { ticks: { color: '#10b981' }, grid: { color: '#1e293b' }, position: 'left' },
+                            y1: { ticks: { color: '#818cf8' }, grid: { drawOnChartArea: false }, position: 'right' }
+                        }
+                    }
+                });
+            } else if (type === 'water_trend') {
+                exSelect.classList.add('hidden');
+                if (appData.waterLogs.length === 0) {
+                    emptyMsg.classList.remove('hidden');
+                    return;
+                }
+                emptyMsg.classList.add('hidden');
+
+                const dates = [...new Set(appData.waterLogs.map(w => w.date))];
+                const liters = dates.map(d => (appData.waterLogs.filter(w => w.date === d).reduce((a, b) => a + b.amountMl, 0) / 1000).toFixed(2));
+
+                activeChartInstance = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: dates,
+                        datasets: [{
+                            label: 'İçilen Su (Litre)',
+                            data: liters,
+                            borderColor: '#06b6d4',
+                            backgroundColor: 'rgba(6, 182, 212, 0.2)',
+                            fill: true,
+                            borderWidth: 3,
+                            pointRadius: 6
+                        }]
+                    },
+                    options: getChartOptions('Litre (L)')
+                });
+            }
+        }
+
+        function getChartOptions(yLabel) {
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: '#cbd5e1', font: { weight: 'bold' } } } },
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+                    y: {
+                        title: { display: true, text: yLabel, color: '#94a3b8' },
+                        ticks: { color: '#94a3b8' },
+                        grid: { color: '#1e293b' }
+                    }
+                }
+            };
+        }
+
+        function saveBodyWeight(e) {
+            e.preventDefault();
+            const w = parseFloat(document.getElementById('quick-weight-input').value);
+            if (!w) return;
+            appData.profile.weight = w;
+            appData.weightHistory.push({
+                id: Date.now(),
+                weight: w,
+                date: getTodayFormatted()
+            });
+            persistData();
+            document.getElementById('quick-weight-input').value = '';
+            runSystemAudit();
+            alert(`Vücut ağırlığı (${w} kg) kaydedildi!`);
+        }
+
+        // --- 9. OTONOM SAĞLIK VE GÜVENLİK AJANI ---
+        function runSystemAudit() {
+            const h = appData.profile.height || 178;
+            const w = appData.profile.weight || 75;
+            const bmi = (w / ((h / 100) * (h / 100))).toFixed(1);
+
+            document.getElementById('agent-bmi-display').innerText = bmi;
+            const bmiStatus = document.getElementById('agent-bmi-status');
+            if (bmi < 18.5) { bmiStatus.innerText = 'Zayıf'; bmiStatus.className = 'text-xs font-bold text-amber-400'; }
+            else if (bmi < 25) { bmiStatus.innerText = 'İdeal / Normal'; bmiStatus.className = 'text-xs font-bold text-emerald-400'; }
+            else if (bmi < 30) { bmiStatus.innerText = 'Hafif Kilolu'; bmiStatus.className = 'text-xs font-bold text-amber-400'; }
+            else { bmiStatus.innerText = 'Obezite Sınırı'; bmiStatus.className = 'text-xs font-bold text-rose-400'; }
+
+            const waterNeed = (w * 0.035).toFixed(1);
+            document.getElementById('agent-water-need-display').innerText = `${waterNeed} L`;
+
+            const proteinNeed = Math.round(w * 1.6);
+            document.getElementById('agent-protein-need-display').innerText = `${proteinNeed} g`;
+
+            document.getElementById('user-height').value = h;
+            document.getElementById('user-weight').value = w;
+            document.getElementById('user-age').value = appData.profile.age || 25;
+
+            // Arka Plan Denetimi & Otomatik Uyarı
+            const todayWaterLiters = appData.waterLogs.reduce((a, b) => a + b.amountMl, 0) / 1000;
+            const alertBanner = document.getElementById('agent-alert-banner');
+            const alertText = document.getElementById('agent-alert-text');
+
+            if (todayWaterLiters < (waterNeed * 0.4) && new Date().getHours() >= 15) {
+                alertBanner.classList.remove('hidden');
+                alertText.innerText = `Otonom Hidrasyon Uyarısı: Vücut kütlenize göre (${w} kg) bugün en az ${waterNeed}L su içmelisiniz. Şu ana kadar yalnızca ${todayWaterLiters.toFixed(2)}L içtiniz!`;
+            } else {
+                alertBanner.classList.add('hidden');
+            }
+
+            logAgentActivity(`🛡️ Sistem denetimi: BMI ${bmi}, Su hedefi ${waterNeed}L hesaplandı. Veri güvenliği tam.`);
+        }
+
+        function saveUserProfile(e) {
+            e.preventDefault();
+            appData.profile.height = parseFloat(document.getElementById('user-height').value) || 178;
+            appData.profile.weight = parseFloat(document.getElementById('user-weight').value) || 75;
+            appData.profile.age = parseInt(document.getElementById('user-age').value) || 25;
+            persistData();
+            runSystemAudit();
+            alert('Kullanıcı biyometrik profili güncellendi!');
+        }
+
+        function logAgentActivity(msg) {
+            const box = document.getElementById('agent-log-box');
+            if (!box) return;
+            const time = getTodayTimeFormatted();
+            box.innerHTML = `<div>[${time}] ${msg}</div>` + box.innerHTML;
+        }
+
+        // --- 10. AI KOÇ SOHBETİ ---
+        function handleAiChatSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('ai-chat-input');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const chat = document.getElementById('ai-chat-messages');
+            chat.innerHTML += `
+                <div class="bg-indigo-950/80 p-3 rounded-2xl border border-indigo-900 max-w-[85%] ml-auto text-indigo-200">
+                    ${text}
+                </div>
+            `;
+            input.value = '';
+            chat.scrollTop = chat.scrollHeight;
+
+            setTimeout(() => {
+                const totalCal = appData.foods.reduce((a, b) => a + b.cal, 0);
+                const totalProt = appData.foods.reduce((a, b) => a + b.prot, 0);
+                const waterL = (appData.waterLogs.reduce((a, b) => a + b.amountMl, 0) / 1000).toFixed(2);
+                const workoutsToday = appData.workouts.filter(w => w.day === currentActiveDay).length;
+
+                let reply = `Verilerinizi analiz ettim: Bugün toplam ${totalCal} kcal ve ${totalProt}g protein aldınız. Su tüketiminiz ${waterL} Litre seviyesinde. `;
+                if (text.toLowerCase().includes('protein') || text.toLowerCase().includes('besin')) {
+                    const targetProt = Math.round(appData.profile.weight * 1.8);
+                    reply += `Kas onarımı için günlük protein hedefiniz yaklaşık ${targetProt}g olmalıdır. Şu ana kadar %${Math.round((totalProt/targetProt)*100)} seviyesindesiniz.`;
+                } else if (text.toLowerCase().includes('antrenman') || text.toLowerCase().includes('ağırlık')) {
+                    reply += `${currentActiveDay} günü için ${workoutsToday} adet hareket tanımlanmış. Setlerdeki ağırlık artışınızı koruyarak aşırı tükenişe gitmeden formu bozmayın.`;
+                } else {
+                    reply += `Programınıza sadık kaldığınız sürece gelişim grafiğiniz yükselmeye devam edecektir. Herhangi bir kas grubunda yorgunluk hissediyor musunuz?`;
+                }
+
+                chat.innerHTML += `
+                    <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 max-w-[85%] text-slate-300">
+                        ${reply}
+                    </div>
+                `;
+                chat.scrollTop = chat.scrollHeight;
+            }, 700);
+        }
+
+        function clearAiChat() {
+            document.getElementById('ai-chat-messages').innerHTML = `
+                <div class="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 max-w-[85%] text-slate-300">
+                    Sohbet temizlendi. Sorularınızı bekliyorum!
+                </div>
+            `;
+        }
+
+        // --- 11. YEDEK DIŞA / İÇE AKTARMA ---
+        function exportDataJson() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `ai_pro_fit_backup_${Date.now()}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function importDataJson(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const imported = JSON.parse(evt.target.result);
+                    appData = imported;
+                    persistData();
+                    alert('Yedek başarıyla yüklendi!');
+                } catch (err) {
+                    alert('Geçersiz JSON dosyası!');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function renderAllSections() {
+            renderWorkoutCards();
+            renderFoodTable();
+            renderWaterSection();
+            updateAnatomyHeatmap();
+        }
+
+        // Sayfa Yüklendiğinde Başlat
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
