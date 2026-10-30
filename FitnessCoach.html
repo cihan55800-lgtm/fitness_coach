@@ -198,6 +198,8 @@
                                 <button type="button" onclick="setQuickExercise('Lat Pulldown', 'Sırt')" class="text-[10px] bg-slate-900 hover:bg-indigo-900/50 text-slate-300 px-2 py-0.5 rounded border border-slate-800">Lat Pulldown</button>
                                 <button type="button" onclick="setQuickExercise('Overhead Press', 'Omuz')" class="text-[10px] bg-slate-900 hover:bg-indigo-900/50 text-slate-300 px-2 py-0.5 rounded border border-slate-800">Overhead Press</button>
                                 <button type="button" onclick="setQuickExercise('Biceps Barbell Curl', 'Biceps')" class="text-[10px] bg-slate-900 hover:bg-indigo-900/50 text-slate-300 px-2 py-0.5 rounded border border-slate-800">Barbell Curl</button>
+                                <button type="button" onclick="setQuickExercise('Wrist Curl (Bilek)', 'Ön Kol')" class="text-[10px] bg-slate-900 hover:bg-indigo-900/50 text-slate-300 px-2 py-0.5 rounded border border-slate-800">Wrist Curl (Ön Kol)</button>
+                                <button type="button" onclick="setQuickExercise('Reverse Barbell Curl', 'Ön Kol')" class="text-[10px] bg-slate-900 hover:bg-indigo-900/50 text-slate-300 px-2 py-0.5 rounded border border-slate-800">Reverse Curl (Ön Kol)</button>
                             </div>
                         </div>
 
@@ -210,7 +212,8 @@
                                 <option value="Bacak">Ön Bacak (Quadriceps)</option>
                                 <option value="Arka Bacak">Arka Bacak & Kalça (Hamstrings / Glutes)</option>
                                 <option value="Omuz">Omuz (Deltoids)</option>
-                                <option value="Biceps">Biceps (Ön Kol)</option>
+                                <option value="Biceps">Biceps (Pazu / Üst Kol)</option>
+                                <option value="Ön Kol">Ön Kol / Bilek (Forearms / Brachioradialis)</option>
                                 <option value="Triceps">Triceps (Arka Kol)</option>
                                 <option value="Karın">Karın & Core (Abs)</option>
                                 <option value="Baldır">Baldır / Kalf (Calves)</option>
@@ -621,6 +624,11 @@
                                  style="top: 25%; left: 9%; width: 6%; height: 8%;" title="Biceps (Sol)"></div>
                             <div onclick="showMuscleDetail('Biceps')" id="hotspot-biceps-sag" class="muscle-hotspot heat-none" 
                                  style="top: 25%; left: 36%; width: 6%; height: 8%;" title="Biceps (Sağ)"></div>
+                            <!-- Ön Kol Sol & Sağ -->
+                            <div onclick="showMuscleDetail('Ön Kol')" id="hotspot-onkol-sol" class="muscle-hotspot heat-none" 
+                                 style="top: 34%; left: 7%; width: 6%; height: 12%;" title="Ön Kol / Bilek (Sol)"></div>
+                            <div onclick="showMuscleDetail('Ön Kol')" id="hotspot-onkol-sag" class="muscle-hotspot heat-none" 
+                                 style="top: 34%; left: 38%; width: 6%; height: 12%;" title="Ön Kol / Bilek (Sağ)"></div>
                             <div onclick="showMuscleDetail('Bacak')" id="hotspot-bacak-sol" class="muscle-hotspot heat-none" 
                                  style="top: 48%; left: 16%; width: 8%; height: 18%;" title="Ön Bacak (Quadriceps Sol)"></div>
                             <div onclick="showMuscleDetail('Bacak')" id="hotspot-bacak-sag" class="muscle-hotspot heat-none" 
@@ -635,6 +643,11 @@
                                  style="top: 24%; left: 58%; width: 6%; height: 9%;" title="Triceps (Sol)"></div>
                             <div onclick="showMuscleDetail('Triceps')" id="hotspot-triceps-sag" class="muscle-hotspot heat-none" 
                                  style="top: 24%; left: 86%; width: 6%; height: 9%;" title="Triceps (Sağ)"></div>
+                            <!-- Arka Ön Kol Sol & Sağ -->
+                            <div onclick="showMuscleDetail('Ön Kol')" id="hotspot-onkol-arka-sol" class="muscle-hotspot heat-none" 
+                                 style="top: 34%; left: 55%; width: 6%; height: 12%;" title="Arka Sol Ön Kol"></div>
+                            <div onclick="showMuscleDetail('Ön Kol')" id="hotspot-onkol-arka-sag" class="muscle-hotspot heat-none" 
+                                 style="top: 34%; left: 88%; width: 6%; height: 12%;" title="Arka Sağ Ön Kol"></div>
                             <div onclick="showMuscleDetail('Arka Bacak')" id="hotspot-kalca" class="muscle-hotspot heat-none" 
                                  style="top: 42%; left: 66%; width: 18%; height: 12%;" title="Kalça (Glutes)"></div>
                             <div onclick="showMuscleDetail('Arka Bacak')" id="hotspot-arka-bacak" class="muscle-hotspot heat-none" 
@@ -1714,7 +1727,7 @@
         function updateAnatomyHeatmap() {
             const muscleSets = {
                 'Göğüs': 0, 'Sırt': 0, 'Bacak': 0, 'Arka Bacak': 0,
-                'Omuz': 0, 'Biceps': 0, 'Triceps': 0, 'Karın': 0, 'Baldır': 0
+                'Omuz': 0, 'Biceps': 0, 'Ön Kol': 0, 'Triceps': 0, 'Karın': 0, 'Baldır': 0
             };
 
             appData.workouts.forEach(w => {
@@ -1736,6 +1749,8 @@
             setHotspotClass('hotspot-omuz-on-sag', muscleSets['Omuz']);
             setHotspotClass('hotspot-biceps-sol', muscleSets['Biceps']);
             setHotspotClass('hotspot-biceps-sag', muscleSets['Biceps']);
+            setHotspotClass('hotspot-onkol-sol', muscleSets['Ön Kol']);
+            setHotspotClass('hotspot-onkol-sag', muscleSets['Ön Kol']);
             setHotspotClass('hotspot-bacak-sol', muscleSets['Bacak']);
             setHotspotClass('hotspot-bacak-sag', muscleSets['Bacak']);
             setHotspotClass('hotspot-baldir-on', muscleSets['Baldır']);
@@ -1743,6 +1758,8 @@
             setHotspotClass('hotspot-sirt', muscleSets['Sırt']);
             setHotspotClass('hotspot-triceps-sol', muscleSets['Triceps']);
             setHotspotClass('hotspot-triceps-sag', muscleSets['Triceps']);
+            setHotspotClass('hotspot-onkol-arka-sol', muscleSets['Ön Kol']);
+            setHotspotClass('hotspot-onkol-arka-sag', muscleSets['Ön Kol']);
             setHotspotClass('hotspot-kalca', muscleSets['Arka Bacak']);
             setHotspotClass('hotspot-arka-bacak', muscleSets['Arka Bacak']);
             setHotspotClass('hotspot-baldir-arka', muscleSets['Baldır']);
